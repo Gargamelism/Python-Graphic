@@ -1,0 +1,121 @@
+commit 2b634306760673ff45f243b5f8bb2b8b0a0ba7e1
+Author: git <git@gitmachine.localdomain>
+Date:   Sun Sep 7 03:11:37 2014 +0300
+
+    Added a test function to breakdown the hill calculation to multiple hills
+
+diff --git a/Car_Ride.py b/Car_Ride.py
+index c1c5bd6..d14b9e0 100755
+--- a/Car_Ride.py
++++ b/Car_Ride.py
+@@ -16,6 +16,11 @@ purple = (146,32,162)
+ light_gray = (200, 200, 200)
+ dark_gray = (100, 100, 100)
+ 
++def print_log(string):
++  log = open('log.txt', 'w')
++  log.write(str(string))
++  log.close
++
+ def calc_plane(hill_count, screen_width, screen_height):
+   locations = [None] * hill_count
+   max_partition = int((screen_width + 10) / hill_count)
+@@ -33,34 +38,55 @@ def calc_plane(hill_count, screen_width, screen_height):
+   return locations
+ 
+ def calc_plane_hills(plane, screen_width):
+-  plane_hills = [None] * screen_width
++  #plane_hills = [None] * screen_width
+   #We actually want the angles between 180-360
+   diff = 180
+   loc_i = 0
+-  pane_hills_count = len(plane)
+-  hills_size = [None] * len(plane)
+-  for i in range(len(plane)):
+-    if i == len(plane) - 1:
++  plane_hills_count = len(plane)
++  hills_size = [None] * plane_hills_count
++  for i in range(plane_hills_count):
++    if i == plane_hills_count - 1:
+       hills_size[i] = screen_width - plane[i][0]
+     else:
+       hills_size[i] = plane[i + 1][0] - plane[i][0]
+-  for i in range(len(plane_hills)):
+-    x = int(size[0]/2 + ((size[0] / 2) * math.cos(math.radians(i+diff)))) + (plane[loc_i][0] - 10)
+-    if x > loc_i:
+-      loc_i = loc_i + 1
++
++    plane_hills = test([100, screen_height-50], [600, 100])
++##  for i in range(len(plane_hills)):
++##    x = i #int(hills_size[loc_i]/2 + ((hills_size[loc_i] / 2) * math.cos(math.radians(i+diff)))) + (plane[loc_i][0])
++##    if i > plane[loc_i + 1][0] and loc_i + 2 < plane_hills_count:
++##      loc_i = loc_i + 1
++##    y = int(screen_height + ((plane[loc_i][1] / 2) * math.sin(math.radians(i+diff))))
++##    #pygame.draw.rect(screen, black, [200 + x, screen_height + y, 10, 10], 0)
++##    plane_hills[i] = [x, y]
++##    if i > 4:
++##      back = i - 5
++##      car_angle = calc_car_angle(plane_hills[back], plane_hills[i])
++##      if car_angle == 0:
++##        plane_hills[back][1] = plane_hills[back][1] + 2
++##      plane_hills[back] = [plane_hills[back][0], plane_hills[back][1], \
++##                           calc_car_angle(plane_hills[back], plane_hills[i])]
++  return plane_hills
++
++def test(location, size):
++  hill = [None] * size[0]
++  #We actually want the angles between 180-360
++  diff = 180
++  for i in range(len(hill)):
++    x = int(size[0]/2 + ((size[0] / 2) * math.cos(math.radians(i+diff)))) + (location[0] - 10)
+     y = int(screen_height + ((size[1] / 2) * math.sin(math.radians(i+diff))))
+     #pygame.draw.rect(screen, black, [200 + x, screen_height + y, 10, 10], 0)
+-    plane_hills[i] = [x, y]
++    hill[i] = [x, y]
+     #print(hill[i])
+     if i > 4:
+       back = i - 5
+-      car_angle = calc_car_angle(plane_hills[back], plane_hills[i])
++      car_angle = calc_car_angle(hill[back], hill[i])
+       if car_angle == 0:
+-        plane_hills[back][1] = plane_hills[back][1] + 2
+-      plane_hills[back] = [plane_hills[back][0], plane_hills[back][1], \
+-                           calc_car_angle(plane_hills[back], plane_hills[i])]
++        hill[back][1] = hill[back][1] + 2
++      hill[back] = [hill[back][0], hill[back][1], calc_car_angle(hill[back], hill[i])]
+       #print(hill[i-15])
+-    return plane_hills
++  return hill
++
++
+ 
+ def draw_plane(hill_coord, screen_width):
+   hill_count = len(hill_coord)
+@@ -126,8 +152,8 @@ def get_car_location(point, point_list):
+   #special binary search implementation that finds the number or the latest
+   min = 0
+   max = 179
+-  print(point)
+-  print(point_list)
++##  print(point)
++##  print(point_list)
+   while max >= min:
+     mid = max - int((max - min)/2)
+     if max == min:
+@@ -171,7 +197,7 @@ x_coord = 0
+ #test
+ plane = calc_plane(4, screen_width, screen_height)
+ plane_hills = calc_plane_hills(plane, screen_width)
+-
++print_log(plane_hills)
+ 
+ # ----Main Program Loop----
+ while done == False:
+@@ -213,7 +239,6 @@ while done == False:
+   draw_plane(plane, screen_width + 10)
+   #print(plane)
+   #pygame.draw.arc(screen, green, [0,screen_height-50,400,100], 0, math.pi, 50)
+-  #hill_1 = draw_hill([100, screen_height-50], [600, 100])
+ 
+   if x_coord < 0 - 30:
+     x_coord = screen_width
