@@ -8,9 +8,14 @@ pygame.init()
 
 # global variables
 # struct_time constants
+TM_YEAR = 0
+TM_MON = 1
+TM_MDAY = 2
 TM_HOUR = 3
 TM_MIN = 4
 TM_SEC = 5
+TM_WDAY = 6
+TM_YDAY = 7
 
 # define colors
 black = (0, 0, 0)
@@ -25,6 +30,7 @@ height = 700
 size = (width, height)
 screen = pygame.display.set_mode(size)
 screen_clock = pygame.time.Clock()
+pygame.display.set_caption("Psycho Watch")
 
 def print_help():
     print('Usage example:', file_name, '-h 13 -m 3 -s 64')
@@ -33,10 +39,8 @@ def print_help():
 
 # breaks down the input arguments
 def get_time(argv, file_name):
-  hours = 0
-  minutes = 0
-  seconds = 0
-
+  user_time = [12, 0, 0]
+  
   # check if the arguments exist
   try:
     opts, args = getopt.getopt(argv, "h:m:s:", ["hours=", "minutes=", "seconds="])
@@ -45,21 +49,20 @@ def get_time(argv, file_name):
   # assign the arguments
   for opt, arg in opts:
     if opt in ("-h", "--hours"):
-      hours = int(arg) % 24
+      if(0 == (int(arg) % 13)):
+        user_time[0] = 1
+      else:
+        user_time[0] = int(arg) % 13
     elif opt in ("-m", "--minutes"):
-      minutes = int(arg) % 60
+      user_time[1] = int(arg) % 60
     elif opt in ("-s", "--seconds"):
-      seconds = int(arg) % 60
+      user_time[2] = int(arg) % 60
 
-  return[hours, minutes, seconds]
+  return user_time
 
-def get_current_time(hours_dif, minutes_dif, seconds_dif):
-  system_time = time.localtime()
-  hours = (system_time[TM_HOUR] + hours_dif) % 12
-  minutes = (system_time[TM_MIN] + minutes_dif) % 60
-  seconds = (system_time[TM_SEC] + seconds_dif) % 60
-  return [hours, minutes, seconds]
-        
+def get_current_time(delta):
+  current_time = time.localtime(time.time() + delta)
+  return [current_time[TM_HOUR], current_time[TM_MIN], current_time[TM_SEC]]   
 
 def create_time_marks(time_unit, mark_count, mark_radius):
     mark_dict_base = {'time_frame': [0, 0], 'position': [0, 0], 'color': 0}
@@ -86,7 +89,7 @@ def create_time_marks(time_unit, mark_count, mark_radius):
         position = [circle_center[0] + int(-1 * (mark_radius * math.cos(theta))), \
                     circle_center[1] + int(-1 * (mark_radius * math.sin(theta)))]
         color = 0
-        if(step > 1 and (marks % 2) != 0):
+        if(step > 1 and (i % 2) != 0):
             color = 1
         mark_array[i] = {'time_frame': time_frame, 'position': position, 'color': color}
         i += 1
@@ -112,42 +115,48 @@ def draw_time_marks(current_time, time_array, main_color, secondary_color):
     #print(seconds)
 
 def main(argv, file_name):
+  system_time = time.localtime(time.time())
+
+  # convert the user retrieved time to a machine readable time  
   user_time = get_time(argv, file_name)
+  # add the current year so the delta won't be too large
+  user_time_string = "{year}.{month}.{mday}.{hours}.{minutes}.{seconds}"\
+                     .format(year=system_time[TM_YEAR], month=system_time[TM_MON], mday=system_time[TM_MDAY], \
+                             hours=user_time[0], minutes=user_time[1], seconds=user_time[2])
+  user_time_struct = datetime.datetime.strptime(user_time_string, "%Y.%m.%d.%I.%M.%S").timetuple()
+  # calculate the delta as unix time
+  time_delta = time.mktime(user_time_struct) - time.mktime(system_time)
 
-  hours = user_time[0]
-  minutes = user_time[1]
-  seconds = user_time[2]
-
-  cur_time = datetime.time(hours, minutes, seconds)
-  print(time)
 
   hours_array = create_time_marks(12, 12, (width - 20) // 8)
   minutes_array = create_time_marks(60, 20, (width - 20) //4)
   seconds_array = create_time_marks(60, 60, (width - 20) // 2)
   # get current system time, and create an offset to the current time
-  system_time = time.localtime()
-  hours_dif = abs(system_time[TM_HOUR] - hours)
-  minutes_dif = abs(system_time[TM_MIN] - minutes)
-  seconds_dif = abs(system_time[TM_SEC] - seconds)
-
-
+  
   is_running = True
 # ---- Main Loop ----
   while(is_running == True):
-    current_time = get_current_time(hours_dif, minutes_dif, seconds_dif)
+	
+	  #Processing section
+    for event in pygame.event.get():
+      if event.type == pygame.QUIT:
+        done = True
+        pygame.quit()
+    #End of processing
+	
+    current_time = get_current_time(time_delta)
     hours = current_time[0]
     minutes = current_time[1]
     seconds = current_time[2]
-
-    print(cur_time)
-
+		
+    screen.fill(black)
     draw_time_marks(hours, hours_array, red, 0)
     draw_time_marks(minutes, minutes_array, light_blue, blue)    
     draw_time_marks(seconds, seconds_array, yellow, 0)
     
     pygame.display.flip()
 
-    screen_clock.tick(60)
+    screen_clock.tick(10)
 
 if __name__ == "__main__":
   main(sys.argv[1:], basename(sys.argv[0]))
